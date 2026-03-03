@@ -11,12 +11,17 @@ var errDigit = errors.New("ERROR: first argument is digit")
 func Unpack(s string) (string, error) {
 	sb := strings.Builder{}
 	sb.Grow(len(s))
-	var prev rune
+	var prev, slash rune
 	for _, v := range s {
 
-		if !unicode.IsDigit(v) {
+		if !unicode.IsDigit(v) || slash != 0 {
+			if v == '\\' {
+				slash = v
+				continue
+			}
 			prev = v
 			sb.WriteRune(prev)
+			slash = 0
 		} else {
 			if prev == 0 {
 				return "", errDigit
@@ -26,6 +31,7 @@ func Unpack(s string) (string, error) {
 				sb.WriteRune((prev))
 			}
 			prev = 0
+			slash = 0
 		}
 	}
 	return sb.String(), nil

@@ -37,6 +37,16 @@ func TestUnpack(t *testing.T) {
 			input:   "a45",
 			wantErr: errDigit,
 		},
+		{
+			name:     "test_case5",
+			input:    "qwe\\4\\5",
+			expected: "qwe45",
+		},
+		{
+			name:     "test_case5",
+			input:    "qwe\\45",
+			expected: "qwe44444",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
