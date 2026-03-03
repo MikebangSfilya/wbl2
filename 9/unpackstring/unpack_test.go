@@ -38,7 +38,7 @@ func TestUnpack(t *testing.T) {
 			got, err := Unpack(tt.input)
 			if tt.wantErr != nil {
 				if !errors.Is(err, tt.wantErr) {
-					t.Errorf("expected %v, got %v", tt.wantErr, err)
+					t.Fatalf("expected %v, got %v", tt.wantErr, err)
 				}
 			} else {
 				if got != tt.expected {
