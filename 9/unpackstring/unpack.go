@@ -16,14 +16,14 @@ func Unpack(s string) (string, error) {
 
 		if !unicode.IsDigit(v) {
 			prev = v
-			sb.WriteString(string(prev))
+			sb.WriteRune(prev)
 		} else {
 			if prev == 0 {
 				return "", errDigit
 			}
 			n := int(v-'0') - 1
 			for range n {
-				sb.WriteString(string(prev))
+				sb.WriteRune((prev))
 			}
 
 		}
