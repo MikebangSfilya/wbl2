@@ -28,9 +28,14 @@ func TestUnpack(t *testing.T) {
 			wantErr: errDigit,
 		},
 		{
-			name:     "",
+			name:     "test_case4",
 			input:    "",
 			expected: "",
+		},
+		{
+			name:    "test_case5",
+			input:   "a45",
+			wantErr: errDigit,
 		},
 	}
 	for _, tt := range tests {

@@ -25,7 +25,7 @@ func Unpack(s string) (string, error) {
 			for range n {
 				sb.WriteRune((prev))
 			}
-
+			prev = 0
 		}
 	}
 	return sb.String(), nil
