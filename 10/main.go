@@ -13,6 +13,7 @@ import (
 
 type Sorter struct {
 	Lines   []string
+	set     map[string]struct{}
 	Column  int
 	Reverse bool
 	Num     bool
@@ -26,21 +27,31 @@ func (s *Sorter) prepare(input []byte) {
 	slog.Debug("s.data", "[]string", stringsInput)
 }
 
+func (s *Sorter) unique() {
+	s.set = make(map[string]struct{}, len(s.Lines))
+	for _, v := range s.Lines {
+		s.set[v] = struct{}{}
+	}
+	s.Lines = s.Lines[:0]
+	for k := range s.set {
+		s.Lines = append(s.Lines, k)
+	}
+}
+
 func (s *Sorter) sort() {
 	slices.SortFunc(s.Lines, func(a, b string) int {
 		aFiied := strings.Fields(a)
 		bField := strings.Fields(b)
-		// slog.Debug("fields", "aField", aFiied, "bField", bField)
 
 		if s.Column >= len(aFiied) || s.Column >= len(bField) {
 			return 0
 		}
 
 		if s.Reverse {
-			return cmp.Compare(b[s.Column], a[s.Column])
+			return cmp.Compare(bField[s.Column], aFiied[s.Column])
 		}
 
-		return cmp.Compare(a[s.Column], b[s.Column])
+		return cmp.Compare(aFiied[s.Column], bField[s.Column])
 	})
 }
 
@@ -51,6 +62,9 @@ func (s *Sorter) Sort(input []byte) {
 	}
 
 	s.prepare(input)
+	if s.Uniq {
+		s.unique()
+	}
 	s.sort()
 	for _, v := range s.Lines {
 		fmt.Println(v)
