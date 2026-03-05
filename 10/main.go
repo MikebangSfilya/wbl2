@@ -29,29 +29,38 @@ func (s *Sorter) prepare(input []byte) {
 
 func (s *Sorter) unique() {
 	s.set = make(map[string]struct{}, len(s.Lines))
+	var result []string
 	for _, v := range s.Lines {
-		s.set[v] = struct{}{}
+		if _, ok := s.set[v]; !ok {
+			s.set[v] = struct{}{}
+			result = append(result, v)
+		}
 	}
+
 	s.Lines = s.Lines[:0]
-	for k := range s.set {
-		s.Lines = append(s.Lines, k)
+	for _, v := range result {
+		s.Lines = append(s.Lines, v)
 	}
 }
 
 func (s *Sorter) sort() {
-	slices.SortFunc(s.Lines, func(a, b string) int {
-		aFiied := strings.Fields(a)
+	slices.SortStableFunc(s.Lines, func(a, b string) int {
+		aField := strings.Fields(a)
 		bField := strings.Fields(b)
 
-		if s.Column >= len(aFiied) || s.Column >= len(bField) {
-			return 0
+		var aVal, bVal string
+		if s.Column < len(aField) {
+			aVal = aField[s.Column]
+		}
+		if s.Column < len(bField) {
+			bVal = bField[s.Column]
 		}
 
 		if s.Reverse {
-			return cmp.Compare(bField[s.Column], aFiied[s.Column])
+			return cmp.Compare(bVal, aVal)
 		}
 
-		return cmp.Compare(aFiied[s.Column], bField[s.Column])
+		return cmp.Compare(aVal, bVal)
 	})
 }
 
@@ -66,6 +75,7 @@ func (s *Sorter) Sort(input []byte) {
 		s.unique()
 	}
 	s.sort()
+
 	for _, v := range s.Lines {
 		fmt.Println(v)
 	}
