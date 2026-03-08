@@ -29,12 +29,6 @@ func anagram(s []string) map[string][]string {
 }
 
 func main() {
-	input1 := []string{"Пятак", "пятка", "тяпка", "листок", "Слиток", "столик", "стол", "стул", "Кот", "Ток", "кТо", "ОТК", "ааб", "аба", "баа", "сон", "нос", "сон"}
-	input2 := []string{"один", "два", "три", "ирт", "тир", "рит", "", " ", "а", "б", "в", "а"}
-	input3 := []string{"ропот", "топор", "отпор", "прото", "ротор", "автор", "товар", "отвар", "рвота", "тавро"}
-	input4 := []string{"яблоко", "груша", "банан", "киви", "мандарин", "слива"}
-	fmt.Println(anagram(input1))
-	fmt.Println(anagram(input2))
-	fmt.Println(anagram(input3))
-	fmt.Println(anagram(input4))
+	input := []string{"Пятак", "пятка", "тяпка", "листок", "слиток", "столик", "стол"}
+	fmt.Println(anagram(input))
 }
