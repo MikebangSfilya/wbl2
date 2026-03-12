@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"regexp"
 	"strings"
 
 	flag "github.com/spf13/pflag"
@@ -24,7 +25,7 @@ type Grep struct {
 	number      bool // -n
 }
 
-func (g *Grep) Read(r io.Reader, pattern string) error {
+func (g *Grep) Read(r io.Reader) error {
 	scanner := bufio.NewScanner(r)
 
 	for scanner.Scan() {
@@ -36,19 +37,35 @@ func (g *Grep) Read(r io.Reader, pattern string) error {
 
 func (g *Grep) filter(pattern string) func(line string) bool {
 
-	if g.ignoreCase {
-		pattern = strings.ToLower(pattern)
+	if g.fixed {
+		if g.ignoreCase {
+			pattern = strings.ToLower(pattern)
+		}
+
+		return func(line string) bool {
+
+			compareLine := line
+			if g.ignoreCase {
+				compareLine = strings.ToLower(line)
+			}
+			lineContains := strings.Contains(compareLine, pattern)
+
+			return lineContains != g.invert
+		}
 	}
 
+	regexPattern := pattern
+	if g.ignoreCase {
+		regexPattern = "(?i)" + regexPattern
+	}
+	re, err := regexp.Compile(regexPattern)
+	if err != nil {
+		slog.Error("invalid regular expression", "error", err)
+		os.Exit(2)
+	}
 	return func(line string) bool {
-
-		compareLine := line
-		if g.ignoreCase {
-			compareLine = strings.ToLower(line)
-		}
-		lineContains := strings.Contains(compareLine, pattern)
-
-		return lineContains != g.invert
+		match := re.MatchString(line)
+		return match != g.invert
 	}
 }
 
@@ -76,6 +93,12 @@ func parseFlags() *Grep {
 	flag.BoolVarP(&g.number, "number", "n", false, "number")
 
 	flag.Parse()
+
+	if g.context > 0 {
+		g.after = g.context
+		g.before = g.context
+	}
+
 	return g
 }
 
@@ -105,7 +128,7 @@ func main() {
 		input = file
 	}
 
-	if err := g.Read(input, pattern); err != nil {
+	if err := g.Read(input); err != nil {
 		slog.Error("read error", "error", err)
 		os.Exit(1)
 	}
@@ -113,8 +136,17 @@ func main() {
 	filter := g.filter(pattern)
 	foundIdx := g.findIdx(filter)
 
-	for _, v := range foundIdx {
-		g.filterLines = append(g.filterLines, g.oldLines[v])
+	for _, idx := range foundIdx {
+		line := g.oldLines[idx]
+		if g.number {
+			line = fmt.Sprintf("%d: %s", idx+1, line)
+		}
+		g.filterLines = append(g.filterLines, line)
+	}
+
+	if g.count {
+		fmt.Println(len(g.filterLines))
+		return
 	}
 
 	for i := range g.filterLines {
