@@ -52,6 +52,7 @@ func (g *Grep) filter(pattern string) func(line string) bool {
 
 			return lineContains != g.invert
 		}
+
 	}
 
 	regexPattern := pattern
@@ -77,6 +78,38 @@ func (g *Grep) findIdx(f func(line string) bool) []int {
 		}
 	}
 	return idxSlice
+
+}
+
+func (g *Grep) normalize(pattern string) {
+	filter := g.filter(pattern)
+	foundIdx := g.findIdx(filter)
+	lastWrite := -1
+
+	for _, idx := range foundIdx {
+
+		start := idx - g.before
+		if start < 0 {
+			start = 0
+		}
+		if start <= lastWrite {
+			start = lastWrite + 1
+		}
+		end := idx + g.after
+		if end >= len(g.oldLines) {
+			end = len(g.oldLines) - 1
+		}
+
+		for j := start; j <= end; j++ {
+			line := g.oldLines[j]
+			if g.number {
+				line = fmt.Sprintf("%d: %s", j+1, line)
+			}
+			g.filterLines = append(g.filterLines, line)
+		}
+
+		lastWrite = end
+	}
 
 }
 
@@ -133,17 +166,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	filter := g.filter(pattern)
-	foundIdx := g.findIdx(filter)
-
-	for _, idx := range foundIdx {
-		line := g.oldLines[idx]
-		if g.number {
-			line = fmt.Sprintf("%d: %s", idx+1, line)
-		}
-		g.filterLines = append(g.filterLines, line)
-	}
-
+	g.normalize(pattern)
 	if g.count {
 		fmt.Println(len(g.filterLines))
 		return
