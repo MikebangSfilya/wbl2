@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"slices"
 	"strconv"
@@ -13,11 +14,10 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
-var BadInput = errors.New("range start cannot be greater than range end")
+var errBadInput = errors.New("range start cannot be greater than range end")
 
 // cut
 type Cut struct {
-	lines     []string
 	fields    string
 	fieldsIdx []int
 	delimiter string
@@ -25,9 +25,12 @@ type Cut struct {
 }
 
 func (c *Cut) prepareFields() error {
+	if len(c.fields) < 1 {
+		return fmt.Errorf("the presence of the -f flag is mandatory")
+	}
+
 	set := make(map[int]struct{})
 	a := strings.Split(c.fields, ",")
-	fmt.Println(a)
 	res := make([]int, 0, len(a))
 	for _, v := range a {
 
@@ -37,12 +40,15 @@ func (c *Cut) prepareFields() error {
 		case len(vFields) > 1:
 			start, end := vFields[0], vFields[len(vFields)-1]
 			s, err := strconv.Atoi(start)
+			if err != nil {
+				return err
+			}
 			e, err := strconv.Atoi(end)
 			if err != nil {
 				return err
 			}
 			if s > e {
-				return BadInput
+				return errBadInput
 			}
 			for i := s; i <= e; i++ {
 				set[i] = struct{}{}
@@ -68,13 +74,17 @@ func (c *Cut) prepareFields() error {
 func (c *Cut) cut(line string) {
 	columns := strings.Split(line, c.delimiter)
 
-	if c.separated && len(columns) == 1 {
+	if len(columns) == 1 {
+		if c.separated {
+			return
+		}
+		fmt.Println(line)
 		return
 	}
 
 	var res []string
 	for _, idx := range c.fieldsIdx {
-		if idx > 0 && idx < len(line) {
+		if idx > 0 && idx <= len(columns) {
 			res = append(res, columns[idx-1])
 		}
 	}
@@ -106,8 +116,12 @@ func (c *Cut) Read(r io.Reader, handle func(line string)) error {
 
 func main() {
 	c := parseFlags()
-	c.prepareFields()
+	if err := c.prepareFields(); err != nil {
+		log.Fatal(err)
+	}
 	input := os.Stdin
 
-	_ = c.Read(input, c.cut)
+	if err := c.Read(input, c.cut); err != nil {
+		log.Fatal(err)
+	}
 }
