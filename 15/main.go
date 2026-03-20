@@ -4,26 +4,96 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 )
+
+func ps() ([]string, error) {
+	var out []string
+
+	out = append(out, fmt.Sprintf("%-8s %-20s", "PID", "PROGRAM"))
+
+	entries, err := os.ReadDir("/proc")
+	if err != nil {
+		return []string{}, fmt.Errorf("failed to read /proc: %w", err)
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		pid, err := strconv.Atoi(entry.Name())
+		if err != nil {
+			continue
+		}
+
+		comm, err := os.ReadFile(filepath.Join("/proc", entry.Name(), "comm"))
+		if err != nil {
+			continue
+		}
+
+		program := strings.TrimSpace(string(comm))
+
+		out = append(out, fmt.Sprintf("%-8d %-20s", pid, program))
+	}
+
+	return out, nil
+}
 
 func fields(line string) []string {
 	return strings.Fields(line)
 
 }
 
+func cmdCd(args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("cd: missing argument")
+	}
+	return os.Chdir(args[1])
+}
+
+func cmdKill(args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("kill: missing arguments")
+	}
+	pid, err := strconv.Atoi(args[1])
+	if err != nil {
+		return fmt.Errorf("kill: invalid PID")
+	}
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		return fmt.Errorf("kill: cant find process")
+	}
+
+	if err := process.Kill(); err != nil {
+		return fmt.Errorf("failed to kill process: %w", err)
+	}
+	return nil
+}
+
+func cmdPs() error {
+	pids, err := ps()
+	if err != nil {
+		return fmt.Errorf("ps error, %w", err)
+	}
+	for _, pid := range pids {
+		fmt.Println(pid)
+	}
+	return nil
+}
+
 func ParseCommand(args []string) error {
 	comm := strings.ToLower(args[0])
 	switch comm {
 	case "cd":
-		if len(args) < 2 {
-			return fmt.Errorf("cd: missing argument")
-		}
-		return os.Chdir(args[1])
+		return cmdCd(args)
 	case "pwd":
 		dir, err := os.Getwd()
 		if errors.Is(err, nil) {
@@ -32,7 +102,16 @@ func ParseCommand(args []string) error {
 		return err
 	case "echo":
 		fmt.Println(strings.Join(args[1:], " "))
+	case "kill":
+		if err := cmdKill(args); err != nil {
+			return err
+		}
+	case "ps":
+		if err := cmdPs(); err != nil {
+			return err
+		}
 	case "exit":
+		fmt.Println("Bye Bye!")
 		os.Exit(0)
 	default:
 		cmd := exec.Command(args[0], args[1:]...)
@@ -73,6 +152,8 @@ func main() {
 		}
 
 		args := fields(line)
-		ParseCommand(args)
+		if err := ParseCommand(args); err != nil {
+			slog.Error("err parse command", "error", err)
+		}
 	}
 }
