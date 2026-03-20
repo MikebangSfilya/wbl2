@@ -79,14 +79,7 @@ func cmdKill(args []string) error {
 }
 
 func cmdPs() error {
-	pids, err := ps()
-	if err != nil {
-		return fmt.Errorf("ps error, %w", err)
-	}
-	for _, pid := range pids {
-		fmt.Println(pid)
-	}
-	return nil
+
 }
 
 func ParseCommand(args []string) error {
@@ -107,9 +100,14 @@ func ParseCommand(args []string) error {
 			return err
 		}
 	case "ps":
-		if err := cmdPs(); err != nil {
-			return err
+		pids, err := ps()
+		if err != nil {
+			return fmt.Errorf("ps error, %w", err)
 		}
+		for _, pid := range pids {
+			fmt.Println(pid)
+		}
+		return nil
 	case "exit":
 		fmt.Println("Bye Bye!")
 		os.Exit(0)
