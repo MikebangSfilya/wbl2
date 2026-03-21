@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -14,7 +15,7 @@ import (
 	"syscall"
 )
 
-func ps() ([]string, error) {
+func cmdPs() ([]string, error) {
 	var out []string
 
 	out = append(out, fmt.Sprintf("%-8s %-20s", "PID", "PROGRAM"))
@@ -47,11 +48,6 @@ func ps() ([]string, error) {
 	return out, nil
 }
 
-func fields(line string) []string {
-	return strings.Fields(line)
-
-}
-
 func cmdCd(args []string) error {
 	if len(args) < 2 {
 		return fmt.Errorf("cd: missing argument")
@@ -78,11 +74,7 @@ func cmdKill(args []string) error {
 	return nil
 }
 
-func cmdPs() error {
-
-}
-
-func ParseCommand(args []string) error {
+func ParseCommand(args []string, r io.Reader, w io.Writer) error {
 	comm := strings.ToLower(args[0])
 	switch comm {
 	case "cd":
@@ -90,31 +82,31 @@ func ParseCommand(args []string) error {
 	case "pwd":
 		dir, err := os.Getwd()
 		if errors.Is(err, nil) {
-			fmt.Println(dir)
+			fmt.Fprintln(w, dir)
 		}
 		return err
 	case "echo":
-		fmt.Println(strings.Join(args[1:], " "))
+		fmt.Fprintln(w, strings.Join(args[1:], " "))
 	case "kill":
 		if err := cmdKill(args); err != nil {
 			return err
 		}
 	case "ps":
-		pids, err := ps()
+		pids, err := cmdPs()
 		if err != nil {
 			return fmt.Errorf("ps error, %w", err)
 		}
 		for _, pid := range pids {
-			fmt.Println(pid)
+			fmt.Fprintln(w, pid)
 		}
 		return nil
 	case "exit":
-		fmt.Println("Bye Bye!")
+		fmt.Fprintln(w, "Bye Bye!")
 		os.Exit(0)
 	default:
 		cmd := exec.Command(args[0], args[1:]...)
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
+		cmd.Stdin = r
+		cmd.Stdout = w
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
 			fmt.Printf("SfilyaShell: command not found: %s\n", args[0])
@@ -138,7 +130,8 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Welcome to Sfilya MiniShell, wb l2.15")
 	for {
-		fmt.Print("SfilyaShell$ ")
+		w, r := os.Stdout, os.Stdin
+		fmt.Print("SfilyaShell>> ")
 
 		if !scanner.Scan() {
 			fmt.Println("\nBye")
@@ -149,9 +142,13 @@ func main() {
 			continue
 		}
 
-		args := fields(line)
-		if err := ParseCommand(args); err != nil {
-			slog.Error("err parse command", "error", err)
+		line = strings.TrimSpace(line)
+		input := strings.Split(line, "|")
+		if len(input) == 1 {
+			if err := ParseCommand(strings.Fields(input[0]), r, w); err != nil {
+				slog.Error("err parse command", "error", err)
+			}
 		}
+
 	}
 }
