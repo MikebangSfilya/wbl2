@@ -87,11 +87,11 @@ func ParseCommand(args []string, r io.Reader, w io.Writer) error {
 	case "pwd":
 		dir, err := cmdPwd()
 		if errors.Is(err, nil) {
-			fmt.Fprintln(w, dir)
+			_, _ = fmt.Fprintln(w, dir)
 		}
 		return err
 	case "echo":
-		fmt.Fprintln(w, strings.Join(args[1:], " "))
+		_, _ = fmt.Fprintln(w, strings.Join(args[1:], " "))
 	case "kill":
 		if err := cmdKill(args); err != nil {
 			return err
@@ -102,11 +102,11 @@ func ParseCommand(args []string, r io.Reader, w io.Writer) error {
 			return fmt.Errorf("ps error, %w", err)
 		}
 		for _, pid := range pids {
-			fmt.Fprintln(w, pid)
+			_, _ = fmt.Fprintln(w, pid)
 		}
 		return nil
 	case "exit":
-		fmt.Fprintln(w, "Bye Bye!")
+		_, _ = fmt.Fprintln(w, "Bye Bye!")
 		os.Exit(0)
 	default:
 		cmd := exec.Command(args[0], args[1:]...)
@@ -177,7 +177,7 @@ func main() {
 				}
 
 				if pw, ok := w.(io.Closer); ok && w != os.Stdout {
-					pw.Close()
+					_ = pw.Close()
 				}
 
 			}(v, in, out)
