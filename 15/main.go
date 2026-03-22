@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 )
 
@@ -74,13 +75,17 @@ func cmdKill(args []string) error {
 	return nil
 }
 
+func cmdPwd() (string, error) {
+	return os.Getwd()
+}
+
 func ParseCommand(args []string, r io.Reader, w io.Writer) error {
 	comm := strings.ToLower(args[0])
 	switch comm {
 	case "cd":
 		return cmdCd(args)
 	case "pwd":
-		dir, err := os.Getwd()
+		dir, err := cmdPwd()
 		if errors.Is(err, nil) {
 			fmt.Fprintln(w, dir)
 		}
@@ -130,7 +135,7 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Welcome to Sfilya MiniShell, wb l2.15")
 	for {
-		w, r := os.Stdout, os.Stdin
+
 		fmt.Print("SfilyaShell>> ")
 
 		if !scanner.Scan() {
@@ -143,12 +148,44 @@ func main() {
 		}
 
 		line = strings.TrimSpace(line)
-		input := strings.Split(line, "|")
-		if len(input) == 1 {
-			if err := ParseCommand(strings.Fields(input[0]), r, w); err != nil {
-				slog.Error("err parse command", "error", err)
+		pipes := strings.Split(line, "|")
+
+		var wg sync.WaitGroup
+		var in io.Reader = os.Stdin
+
+		for i, v := range pipes {
+
+			var out io.Writer
+			var nextIn io.Reader
+
+			if i == len(pipes)-1 {
+				out = os.Stdout
+			} else {
+				pr, pw := io.Pipe()
+				out = pw
+				nextIn = pr
+			}
+
+			wg.Add(1)
+
+			go func(cmd string, r io.Reader, w io.Writer) {
+				defer wg.Done()
+
+				args := strings.Fields(cmd)
+				if err := ParseCommand(args, r, w); err != nil {
+					slog.Error("err parse command", "error", err)
+				}
+
+				if pw, ok := w.(io.Closer); ok && w != os.Stdout {
+					pw.Close()
+				}
+
+			}(v, in, out)
+			if nextIn != nil {
+				in = nextIn
 			}
 		}
+		wg.Wait()
 
 	}
 }
