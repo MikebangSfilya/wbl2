@@ -128,7 +128,7 @@ func main() {
 	go func() {
 		for {
 			<-sigs
-			fmt.Print("\nInterrupt received (Ctrl+C). Type 'exit' to quit.\nSfilyaShell$ ")
+			fmt.Print("\nInterrupt received (Ctrl+C). Type 'exit' to quit.\nSfilyaShell>> ")
 		}
 	}()
 
