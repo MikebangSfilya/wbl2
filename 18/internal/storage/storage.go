@@ -4,6 +4,7 @@ import (
 	"calendar/internal/model"
 	"errors"
 	"sync"
+	"time"
 )
 
 type Storage struct {
@@ -51,4 +52,48 @@ func (s *Storage) Delete(id string) error {
 	return nil
 }
 
-func (s *Storage) GetForday()
+func (s *Storage) GetForDay(date time.Time) []model.Event {
+	s.RLock()
+	defer s.RUnlock()
+
+	var result []model.Event
+	y, m, d := date.Date()
+	for _, event := range s.events {
+		ey, em, ed := event.Date.Date()
+		if y == ey && m == em && d == ed {
+			result = append(result, event)
+		}
+	}
+	return result
+}
+
+func (s *Storage) GetForWeek(date time.Time) []model.Event {
+	s.RLock()
+	defer s.RUnlock()
+
+	var result []model.Event
+	year, week := date.ISOWeek()
+	for _, event := range s.events {
+		eyear, eweek := event.Date.ISOWeek()
+		if year == eyear && week == eweek {
+			result = append(result, event)
+		}
+
+	}
+	return result
+}
+
+func (s *Storage) GetForMonth(date time.Time) []model.Event {
+	s.RLock()
+	defer s.RUnlock()
+
+	var result []model.Event
+	y, m, _ := date.Date()
+	for _, event := range s.events {
+		eyear, emonth, _ := event.Date.Date()
+		if y == eyear && m == emonth {
+			result = append(result, event)
+		}
+	}
+	return result
+}
