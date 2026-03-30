@@ -29,12 +29,12 @@ func New(calendar Calendar) *Handler {
 func (h *Handler) errorResponse(w http.ResponseWriter, msg string, code int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(map[string]string{"error": msg})
+	_ = json.NewEncoder(w).Encode(map[string]string{"error": msg})
 }
 
 func (h *Handler) successResponse(w http.ResponseWriter, result interface{}) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{"result": result})
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"result": result})
 }
 
 func (h *Handler) Create() http.HandlerFunc {
