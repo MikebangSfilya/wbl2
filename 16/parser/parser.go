@@ -7,7 +7,6 @@ import (
 	"golang.org/x/net/html"
 )
 
-// ExtractLinks ищет все ссылки на ресурсы и страницы в HTML
 func ExtractLinks(body []byte, baseURL *url.URL) ([]string, error) {
 	doc, err := html.Parse(bytes.NewReader(body))
 	if err != nil {
