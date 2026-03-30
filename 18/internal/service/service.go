@@ -2,7 +2,6 @@ package service
 
 import (
 	"calendar/internal/model"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,9 +11,9 @@ type EventStore interface {
 	Create(event model.Event) error
 	Update(event model.Event) error
 	Delete(id string) error
-	GetForDay(date time.Time) []model.Event
-	GetForWeek(date time.Time) []model.Event
-	GetForMonth(date time.Time) []model.Event
+	GetForDay(userID int, date time.Time) []model.Event
+	GetForWeek(userID int, date time.Time) []model.Event
+	GetForMonth(userID int, date time.Time) []model.Event
 }
 
 type Service struct {
@@ -27,42 +26,39 @@ func New(store EventStore) *Service {
 	}
 }
 
-func (s *Service) Create(date time.Time, content string) (model.Event, error) {
-	event, err := model.New(date, content)
+func (s *Service) Create(userID int, date time.Time, content string) (model.Event, error) {
+	ev, err := model.New(userID, date, content)
 	if err != nil {
 		return model.Event{}, err
 	}
-	event.ID = uuid.New().String()
-	if err := s.store.Create(event); err != nil {
+	ev.ID = uuid.New().String()
+	if err := s.store.Create(ev); err != nil {
 		return model.Event{}, err
 	}
-	return event, nil
+	return ev, nil
 }
 
-func (s *Service) Update(id string, date time.Time, content string) error {
-	event, err := model.New(date, content)
+func (s *Service) Update(id string, userID int, date time.Time, content string) error {
+	ev, err := model.New(userID, date, content)
 	if err != nil {
 		return err
 	}
-	event.ID = id
-	return s.store.Update(event)
+	ev.ID = id
+	return s.store.Update(ev)
 }
 
 func (s *Service) Delete(id string) error {
-	if id == "" {
-		return fmt.Errorf("id cannot be empty")
-	}
 	return s.store.Delete(id)
 }
 
-func (s *Service) GetForDay(date time.Time) []model.Event {
-	return s.store.GetForDay(date)
+func (s *Service) GetForDay(userID int, date time.Time) []model.Event {
+	return s.store.GetForDay(userID, date)
 }
 
-func (s *Service) GetForWeek(date time.Time) []model.Event {
-	return s.store.GetForWeek(date)
+func (s *Service) GetForWeek(userID int, date time.Time) []model.Event {
+	return s.store.GetForWeek(userID, date)
 }
 
-func (s *Service) GetForMonth(date time.Time) []model.Event {
-	return s.store.GetForMonth(date)
+func (s *Service) GetForMonth(userID int, date time.Time) []model.Event {
+	return s.store.GetForMonth(userID, date)
 }

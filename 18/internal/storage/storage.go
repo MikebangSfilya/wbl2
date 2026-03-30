@@ -52,48 +52,44 @@ func (s *Storage) Delete(id string) error {
 	return nil
 }
 
-func (s *Storage) GetForDay(date time.Time) []model.Event {
+func (s *Storage) GetForDay(userID int, date time.Time) []model.Event {
 	s.RLock()
 	defer s.RUnlock()
-
-	var result []model.Event
+	var res []model.Event
 	y, m, d := date.Date()
-	for _, event := range s.events {
-		ey, em, ed := event.Date.Date()
-		if y == ey && m == em && d == ed {
-			result = append(result, event)
+	for _, e := range s.events {
+		ey, em, ed := e.Date.Date()
+		if e.UserID == userID && y == ey && m == em && d == ed {
+			res = append(res, e)
 		}
 	}
-	return result
+	return res
 }
 
-func (s *Storage) GetForWeek(date time.Time) []model.Event {
+func (s *Storage) GetForWeek(userID int, date time.Time) []model.Event {
 	s.RLock()
 	defer s.RUnlock()
-
-	var result []model.Event
-	year, week := date.ISOWeek()
-	for _, event := range s.events {
-		eyear, eweek := event.Date.ISOWeek()
-		if year == eyear && week == eweek {
-			result = append(result, event)
+	var res []model.Event
+	yr, wk := date.ISOWeek()
+	for _, e := range s.events {
+		eyr, ewk := e.Date.ISOWeek()
+		if e.UserID == userID && yr == eyr && wk == ewk {
+			res = append(res, e)
 		}
-
 	}
-	return result
+	return res
 }
 
-func (s *Storage) GetForMonth(date time.Time) []model.Event {
+func (s *Storage) GetForMonth(userID int, date time.Time) []model.Event {
 	s.RLock()
 	defer s.RUnlock()
-
-	var result []model.Event
+	var res []model.Event
 	y, m, _ := date.Date()
-	for _, event := range s.events {
-		eyear, emonth, _ := event.Date.Date()
-		if y == eyear && m == emonth {
-			result = append(result, event)
+	for _, e := range s.events {
+		ey, em, _ := e.Date.Date()
+		if e.UserID == userID && y == ey && m == em {
+			res = append(res, e)
 		}
 	}
-	return result
+	return res
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"calendar/internal/config"
 	sl2 "calendar/internal/lib/log"
+	"calendar/internal/service"
 	"calendar/internal/storage"
 	"log"
 	"log/slog"
@@ -21,9 +22,9 @@ func main() {
 
 	// TODO: graceful
 
-	storage := storage.New()
+	stg := storage.New()
 
-	// TODO: service
+	srv := service.New(stg)
 
 	// TODO handlers
 
